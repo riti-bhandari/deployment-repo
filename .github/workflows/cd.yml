@@ -1,0 +1,136 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - release
+
+jobs:
+  # 🟢 1️⃣ Helm Template Validation Job
+  helm-template:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        cluster:
+          - eu-west-1
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint Helm Chart
+        run: |
+          helm lint ./helm-chart
+
+      - name: Render Helm Template (Dry Run)
+        run: |
+          ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'prod' || 'dev' }}
+
+          echo "Rendering for environment: $ENVIRONMENT"
+          echo "Cluster: ${{ matrix.cluster }}"
+
+          helm template myapp ./helm-chart \
+            -f helm-chart/values.yaml \
+            -f environments/$ENVIRONMENT/values.yaml \
+            -f environments/$ENVIRONMENT/regions/eu/clusters/${{ matrix.cluster }}.yaml
+
+
+#  # 🔵 2️⃣ Actual Deployment Job
+#   deploy:
+#     needs: helm-template
+#     runs-on: ubuntu-latest
+
+#     strategy:
+#       matrix:
+#         cluster:
+#           - eu-west-1
+
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v4
+
+#       - name: Setup Helm
+#         uses: azure/setup-helm@v4
+
+#       - name: Set AKS context
+#         uses: azure/aks-set-context@v3
+#         with:
+#           resource-group: ${{ secrets.AKS_RG }}
+#           cluster-name: ${{ matrix.cluster }}
+
+#       - name: Deploy with Helm
+#         run: |
+#           ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'prod' || 'dev' }}
+
+#           helm upgrade --install myapp ./helm-chart \
+#             -f helm-chart/values.yaml \
+#             -f environments/$ENVIRONMENT/values.yaml \
+#             -f environments/$ENVIRONMENT/regions/eu/clusters/${{ matrix.cluster }}.yaml
+
+
+
+
+
+
+
+
+
+  # deploy:
+  #   runs-on: ubuntu-latest
+
+  #   strategy:
+  #     matrix:
+  #       cluster:
+  #         - eu-west-1
+  #         # - eu-west-2
+
+  #   steps:
+  #     - name: checkout repo
+  #       uses: actions/checkout@v4
+
+  #     - name: setup helm
+  #       uses: azure/setup-helm@v4
+
+  #     # - name: Azure Login
+  #     #   uses: azure/login@v1
+  #     #   with:
+  #     #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+  #     #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+  #     #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+  #     - name: Set AKS context 
+  #       uses: azure/aks-set-context@v3
+  #       with:
+  #         resource-group: ${{ secrets.AKS_RG }}
+  #         cluster-name: ${{ matrix.cluster }}
+
+
+  #     - name: Deploy with Helm
+  #       run: |
+  #         ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'prod' || 'dev' }}
+          
+  #         helm upgrade --install myapp ./helm/myapp \
+  #           -f helm/myapp/values.yaml \
+  #           -f environments/$ENVIRONMENT/values.yaml \
+  #           -f environments/$ENVIRONMENT/regions/eu/values.yaml \
+  #           -f environments/$ENVIRONMENT/regions/eu/clusters/${{ matrix.cluster }}.yaml 
+            
+  #           # --set image.tag=$(yq e '.image.tag' environments/$ENVIRONMENT/values.yaml)
+
+
+
+
+      # - name: Helm Render Test
+      #   run: |
+      #       echo "Rendering Helm templates for release: ${{ inputs.release_name }} in env: ${{ inputs.environment }}"
+      #       helm template "${{ inputs.release_name }}" ./helm-chart \
+      #         -f helm-chart/values.yaml \
+      #         -f helm-chart/${{ inputs.helm-values-file }} \
+      #         --set image.repository=${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.image-name }} \
+      #         --set image.tag=${{ inputs.image-tag }} \
+      #         --debug

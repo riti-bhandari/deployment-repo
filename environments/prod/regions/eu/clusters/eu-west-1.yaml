@@ -1,0 +1,4 @@
+replicaCount: 4
+
+env:
+  CLUSTER_NAME: eu-west-1
