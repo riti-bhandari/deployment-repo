@@ -41,7 +41,7 @@ jobs:
           helm template myapp ./helm-chart \
             -f helm-chart/values.yaml \
             -f environments/$ENVIRONMENT/values.yaml \
-            -f environments/$ENVIRONMENT/regions/eu/clusters/${{ matrix.cluster }}.yaml
+            -f environments/$ENVIRONMENT/regions/${{ matrix.region }}/clusters/${{ matrix.cluster }}.yaml
 
 
 #  # 🔵 2️⃣ Actual Deployment Job
