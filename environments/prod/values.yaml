@@ -1,4 +1,4 @@
 image:
-  tag: "0.9.6"
+  tag: "0.9.8"
 env:
   ENVIRONMENT: prod
