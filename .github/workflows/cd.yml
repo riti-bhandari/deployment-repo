@@ -13,8 +13,12 @@ jobs:
 
     strategy:
       matrix:
-        cluster:
-          - eu-west-1
+        include:
+         - region: eu
+           cluster: eu-west-1
+         - region: us
+           cluster: us-east-1
+
 
     steps:
       - name: Checkout repo

@@ -1,0 +1,4 @@
+image:
+  tag: "0.9.5"
+env:
+  ENVIRONMENT: dev
