@@ -17,8 +17,8 @@ on:
    #    required: true
     outputs:
       chart-version:
-        description: "Chart version"
-        value: ${{ jobs.release.outputs.latest-tag }}  
+         description: "chart version updated"
+         value: ${{ jobs.update-and-package.outputs.chart-version }}   
 
 concurrency:
   group: deploy-${{ github.ref }}
