@@ -15,10 +15,10 @@ on:
    # secrets:
    #  AWS_ROLE_ARN:
    #    required: true
-    outputs:
-      chart-version:
-         description: "chart version updated"
-         value: ${{ jobs.update-and-package.outputs.chart-version }}   
+    # outputs:
+    #   chart-version:
+    #      description: "chart version updated"
+    #      value: ${{ jobs.update-and-package.outputs.chart-version }}   
 
 concurrency:
   group: deploy-${{ github.ref }}
