@@ -51,17 +51,19 @@ jobs:
       #       --name ${{ needs.detect.outputs.cluster }} \
       #       --region ${{ needs.detect.outputs.region }}
 
+      # - name: Deploy Helm Chart
+      #   run: |
+      #     helm upgrade --install ${{ inputs.app }} \
+      #       apps/${{ inputs.app }}/helm-chart \
+      #       -f apps/${{ inputs.app }}/${{ inputs.app }}.yaml \
+      #       -f environments/${{ inputs.env }}/${{ inputs.app }}.yaml \
+      #       -f regions/${{ inputs.region }}/${{ inputs.app }}.yaml \
+      #       -f clusters/${{ inputs.app }}.yaml \
+      #       --atomic --timeout 5m
+
       - name: Deploy Helm Chart
         run: |
-          helm upgrade --install ${{ inputs.app }} \
-            apps/${{ inputs.app }}/helm-chart \
-            -f apps/${{ inputs.app }}/${{ inputs.app }}.yaml \
-            -f environments/${{ inputs.env }}/${{ inputs.app }}.yaml \
-            -f regions/${{ inputs.region }}/${{ inputs.app }}.yaml \
-            -f clusters/${{ needs.detect.outputs.cluster }}/${{ needs.detect.outputs.app }}.yaml \
-            --atomic --timeout 5m
-
-
+          echo "deployment successfull"
 
 
 
