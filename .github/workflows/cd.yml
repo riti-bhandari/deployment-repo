@@ -1,58 +1,127 @@
-name: Deploy
+name: Helm Deployment
 
 on:
   push:
     branches:
       - main
-      - release
+    paths:
+      - 'apps/**'
+      - 'environments/**'
+      - 'regions/**'
+      - 'clusters/**'
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
-  # 🟢 1️⃣ Helm Template Validation Job
-  helm-template:
+  detect:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        include:
-         - region: eu
-           cluster: eu-west-1
-         - region: us
-           cluster: us-east-1
-
+    outputs:
+      app: ${{ steps.extract.outputs.app }}
+      env: ${{ steps.extract.outputs.env }}
+      region: ${{ steps.extract.outputs.region }}
+      cluster: ${{ steps.extract.outputs.cluster }}
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Dynamic Values
+        id: extract
+        run: |
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          APP=$(echo "$CHANGED" | grep -oE 'apps/[^/]+' | head -n1 | cut -d'/' -f2)
+          ENV=$(echo "$CHANGED" | grep -oE 'environments/[^/]+' | head -n1 | cut -d'/' -f2)
+          REGION=$(echo "$CHANGED" | grep -oE 'regions/[^/]+' | head -n1 | cut -d'/' -f2)
+          CLUSTER=$(echo "$CHANGED" | grep -oE 'clusters/[^/]+' | head -n1 | cut -d'/' -f2)
+
+          # Fallback defaults (important)
+          ENV=${ENV:-dev}
+          REGION=${REGION:-us-east-1}
+          CLUSTER=${CLUSTER:-cluster1}
+
+          echo "app=$APP" >> $GITHUB_OUTPUT
+          echo "env=$ENV" >> $GITHUB_OUTPUT
+          echo "region=$REGION" >> $GITHUB_OUTPUT
+          echo "cluster=$CLUSTER" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: detect
+    runs-on: ubuntu-latest
+
+    environment: ${{ needs.detect.outputs.env }}
+
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
-      - name: Lint Helm Chart
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ needs.detect.outputs.region }}
+
+      - name: Update kubeconfig
         run: |
-          helm lint ./helm-chart
+          aws eks update-kubeconfig \
+            --name ${{ needs.detect.outputs.cluster }} \
+            --region ${{ needs.detect.outputs.region }}
 
-      - name: Render Helm Template (Dry Run)
+      - name: Deploy Helm Chart
         run: |
-          ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'prod' || 'dev' }}
-
-          echo "Rendering for environment: $ENVIRONMENT"
-          echo "Cluster: ${{ matrix.cluster }}"
-
-          helm template myapp ./helm-chart \
-            -f helm-chart/values.yaml \
-            -f environments/$ENVIRONMENT/values.yaml \
-            -f environments/$ENVIRONMENT/regions/${{ matrix.region }}/clusters/${{ matrix.cluster }}.yaml
+          helm upgrade --install ${{ needs.detect.outputs.app }} \
+            apps/${{ needs.detect.outputs.app }}/helm-chart \
+            -f apps/${{ needs.detect.outputs.app }}/${{ needs.detect.outputs.app }}.yaml \
+            -f environments/${{ needs.detect.outputs.env }}/${{ needs.detect.outputs.app }}.yaml \
+            -f regions/${{ needs.detect.outputs.region }}/${{ needs.detect.outputs.app }}.yaml \
+            -f clusters/${{ needs.detect.outputs.cluster }}/${{ needs.detect.outputs.app }}.yaml \
+            --atomic --timeout 5m
 
 
-#  # 🔵 2️⃣ Actual Deployment Job
-#   deploy:
-#     needs: helm-template
+
+
+
+
+# name: Deploy
+
+# on:
+#   push:
+#     branches:
+#       - main
+#       - release
+#     paths:
+#       - 'apps/**'
+#       - 'environments/**'
+
+# concurrency:
+#   group: deploy-${{ github.ref }}
+#   cancel-in-progress: true
+
+# jobs:
+#   # 🟢 1️⃣ Helm Template Validation Job
+#   helm-template:
 #     runs-on: ubuntu-latest
 
 #     strategy:
 #       matrix:
-#         cluster:
-#           - eu-west-1
+#         include:
+#          - region: eu
+#            cluster: eu-west-1
+#          - region: us
+#            cluster: us-east-1
+
 
 #     steps:
 #       - name: Checkout repo
@@ -61,20 +130,54 @@ jobs:
 #       - name: Setup Helm
 #         uses: azure/setup-helm@v4
 
-#       - name: Set AKS context
-#         uses: azure/aks-set-context@v3
-#         with:
-#           resource-group: ${{ secrets.AKS_RG }}
-#           cluster-name: ${{ matrix.cluster }}
+#       - name: Lint Helm Chart
+#         run: |
+#           helm lint ./helm-chart
 
-#       - name: Deploy with Helm
+#       - name: Render Helm Template (Dry Run)
 #         run: |
 #           ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'prod' || 'dev' }}
 
-#           helm upgrade --install myapp ./helm-chart \
+#           echo "Rendering for environment: $ENVIRONMENT"
+#           echo "Cluster: ${{ matrix.cluster }}"
+
+#           helm template myapp ./helm-chart \
 #             -f helm-chart/values.yaml \
 #             -f environments/$ENVIRONMENT/values.yaml \
-#             -f environments/$ENVIRONMENT/regions/eu/clusters/${{ matrix.cluster }}.yaml
+#             -f environments/$ENVIRONMENT/regions/${{ matrix.region }}/clusters/${{ matrix.cluster }}.yaml
+
+
+# #  # 🔵 2️⃣ Actual Deployment Job
+# #   deploy:
+# #     needs: helm-template
+# #     runs-on: ubuntu-latest
+
+# #     strategy:
+# #       matrix:
+# #         cluster:
+# #           - eu-west-1
+
+# #     steps:
+# #       - name: Checkout repo
+# #         uses: actions/checkout@v4
+
+# #       - name: Setup Helm
+# #         uses: azure/setup-helm@v4
+
+# #       - name: Set AKS context
+# #         uses: azure/aks-set-context@v3
+# #         with:
+# #           resource-group: ${{ secrets.AKS_RG }}
+# #           cluster-name: ${{ matrix.cluster }}
+
+# #       - name: Deploy with Helm
+# #         run: |
+# #           ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'prod' || 'dev' }}
+
+# #           helm upgrade --install myapp ./helm-chart \
+# #             -f helm-chart/values.yaml \
+# #             -f environments/$ENVIRONMENT/values.yaml \
+# #             -f environments/$ENVIRONMENT/regions/eu/clusters/${{ matrix.cluster }}.yaml
 
 
 
@@ -84,57 +187,57 @@ jobs:
 
 
 
-  # deploy:
-  #   runs-on: ubuntu-latest
+#   # deploy:
+#   #   runs-on: ubuntu-latest
 
-  #   strategy:
-  #     matrix:
-  #       cluster:
-  #         - eu-west-1
-  #         # - eu-west-2
+#   #   strategy:
+#   #     matrix:
+#   #       cluster:
+#   #         - eu-west-1
+#   #         # - eu-west-2
 
-  #   steps:
-  #     - name: checkout repo
-  #       uses: actions/checkout@v4
+#   #   steps:
+#   #     - name: checkout repo
+#   #       uses: actions/checkout@v4
 
-  #     - name: setup helm
-  #       uses: azure/setup-helm@v4
+#   #     - name: setup helm
+#   #       uses: azure/setup-helm@v4
 
-  #     # - name: Azure Login
-  #     #   uses: azure/login@v1
-  #     #   with:
-  #     #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
-  #     #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-  #     #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+#   #     # - name: Azure Login
+#   #     #   uses: azure/login@v1
+#   #     #   with:
+#   #     #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
+#   #     #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+#   #     #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-  #     - name: Set AKS context 
-  #       uses: azure/aks-set-context@v3
-  #       with:
-  #         resource-group: ${{ secrets.AKS_RG }}
-  #         cluster-name: ${{ matrix.cluster }}
+#   #     - name: Set AKS context 
+#   #       uses: azure/aks-set-context@v3
+#   #       with:
+#   #         resource-group: ${{ secrets.AKS_RG }}
+#   #         cluster-name: ${{ matrix.cluster }}
 
 
-  #     - name: Deploy with Helm
-  #       run: |
-  #         ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'prod' || 'dev' }}
+#   #     - name: Deploy with Helm
+#   #       run: |
+#   #         ENVIRONMENT=${{ github.ref == 'refs/heads/release' && 'prod' || 'dev' }}
           
-  #         helm upgrade --install myapp ./helm/myapp \
-  #           -f helm/myapp/values.yaml \
-  #           -f environments/$ENVIRONMENT/values.yaml \
-  #           -f environments/$ENVIRONMENT/regions/eu/values.yaml \
-  #           -f environments/$ENVIRONMENT/regions/eu/clusters/${{ matrix.cluster }}.yaml 
+#   #         helm upgrade --install myapp ./helm/myapp \
+#   #           -f helm/myapp/values.yaml \
+#   #           -f environments/$ENVIRONMENT/values.yaml \
+#   #           -f environments/$ENVIRONMENT/regions/eu/values.yaml \
+#   #           -f environments/$ENVIRONMENT/regions/eu/clusters/${{ matrix.cluster }}.yaml 
             
-  #           # --set image.tag=$(yq e '.image.tag' environments/$ENVIRONMENT/values.yaml)
+#   #           # --set image.tag=$(yq e '.image.tag' environments/$ENVIRONMENT/values.yaml)
 
 
 
 
-      # - name: Helm Render Test
-      #   run: |
-      #       echo "Rendering Helm templates for release: ${{ inputs.release_name }} in env: ${{ inputs.environment }}"
-      #       helm template "${{ inputs.release_name }}" ./helm-chart \
-      #         -f helm-chart/values.yaml \
-      #         -f helm-chart/${{ inputs.helm-values-file }} \
-      #         --set image.repository=${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.image-name }} \
-      #         --set image.tag=${{ inputs.image-tag }} \
-      #         --debug
+#       # - name: Helm Render Test
+#       #   run: |
+#       #       echo "Rendering Helm templates for release: ${{ inputs.release_name }} in env: ${{ inputs.environment }}"
+#       #       helm template "${{ inputs.release_name }}" ./helm-chart \
+#       #         -f helm-chart/values.yaml \
+#       #         -f helm-chart/${{ inputs.helm-values-file }} \
+#       #         --set image.repository=${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.image-name }} \
+#       #         --set image.tag=${{ inputs.image-tag }} \
+#       #         --debug
