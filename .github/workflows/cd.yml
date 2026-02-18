@@ -12,9 +12,6 @@ on:
      region:
        required: true
        type: string
-     cluster:
-       required: true
-       type: string
    # secrets:
    #  AWS_ROLE_ARN:
    #    required: true
