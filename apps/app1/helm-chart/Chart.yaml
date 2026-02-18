@@ -1,6 +1,7 @@
 apiVersion: v2
-name: deployment-repo
+name: my-chart
 description: Demo Enterprise Helm Chart
 type: application
 version: 0.1.0
-appVersion: "0.9.8"
+appVersion: "1.0"
+
