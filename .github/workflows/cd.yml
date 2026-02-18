@@ -15,7 +15,10 @@ on:
    # secrets:
    #  AWS_ROLE_ARN:
    #    required: true
-    
+    outputs:
+      chart-version:
+        description: "Chart version"
+        value: ${{ jobs.release.outputs.latest-tag }}  
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -60,7 +63,7 @@ jobs:
 
       - name: Deploy Helm Chart
         run: |
-          echo "deployment successfull"
+          echo "chart version for  ${{ inputs.app }} is ${{ inputs.chart-version }} on ${{ inputs.env }} environment"
 
 
 
