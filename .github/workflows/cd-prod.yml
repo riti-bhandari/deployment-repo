@@ -1,0 +1,53 @@
+name: Helm Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Application name"
+        required: true
+        type: string
+      env:
+        description: "Environment (dev/stage/prod)"
+        required: true
+        type: choice
+        options:
+          - dev
+          - stage
+          - prod
+      region:
+        description: "AWS Region"
+        required: true
+        type: string
+      latest-chart:
+        description: "Chart version"
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # 👇 This enables GitHub Environment protection
+    environment: ${{ inputs.env }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy Helm Chart
+        run: |
+          echo "Deploying ${{ inputs.app }}"
+          echo "Environment: ${{ inputs.env }}"
+          echo "Region: ${{ inputs.region }}"
+          echo "Chart version: ${{ inputs.latest-chart }}"
