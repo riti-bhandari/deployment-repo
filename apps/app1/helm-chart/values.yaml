@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: 
+  repository: dockertech28/my-app
   tag: "latest"
   pullPolicy: IfNotPresent
 
