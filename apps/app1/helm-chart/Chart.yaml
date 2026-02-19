@@ -2,5 +2,5 @@ apiVersion: v2
 name: my-chart
 description: Demo Enterprise Helm Chart
 type: application
-version: 0.1.7
-appVersion: "0.9.13"
+version: 0.1.8
+appVersion: "pr-33ca763"
