@@ -1,7 +1,7 @@
 name: Helm Deployment
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       app:
         description: "Application name"
@@ -10,11 +10,7 @@ on:
       env:
         description: "Environment (dev/stage/prod)"
         required: true
-        type: choice
-        options:
-          - dev
-          - stage
-          - prod
+        type: string
       region:
         description: "AWS Region"
         required: true
@@ -25,17 +21,17 @@ on:
         type: string
 
 concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+  group: deploy-${{ inputs.env }}
+  cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # 👇 This enables GitHub Environment protection
+    # 🔑 This is what enables manual approval for prod
     environment: ${{ inputs.env }}
 
     steps:
@@ -51,3 +47,9 @@ jobs:
           echo "Environment: ${{ inputs.env }}"
           echo "Region: ${{ inputs.region }}"
           echo "Chart version: ${{ inputs.latest-chart }}"
+
+          # Example real deployment command:
+          # helm upgrade --install ${{ inputs.app }} ./chart \
+          #   --namespace ${{ inputs.env }} \
+          #   --values values-${{ inputs.env }}.yaml \
+          #   --set image.tag=${{ inputs.latest-chart }}
