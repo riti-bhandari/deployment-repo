@@ -1,4 +1,12 @@
-image:
-  tag: "0.9.5"
+replicaCount: 1
+
 env:
+  LOG_LEVEL: debug
   ENVIRONMENT: dev
+
+
+
+# image:
+#   tag: "0.9.5"
+# env:
+#   ENVIRONMENT: dev
