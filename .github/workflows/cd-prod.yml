@@ -19,6 +19,14 @@ on:
         description: "Chart version"
         required: true
         type: string
+    secrets:
+      AZURE_VM_IP:
+        required: true
+      AZURE_VM_USER:
+        required: true
+      AZURE_VM_SSH_KEY:
+        required: true
+
 
 concurrency:
   group: deploy-${{ inputs.env }}
@@ -38,18 +46,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          key: ${{ secrets.AZURE_VM_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.AZURE_VM_USER }}/deployment-repo
+            git pull
 
-      - name: Deploy Helm Chart
-        run: |
-          echo "Deploying ${{ inputs.app }}"
-          echo "Environment: ${{ inputs.env }}"
-          echo "Region: ${{ inputs.region }}"
-          echo "Chart version: ${{ inputs.latest-chart }}"
+            helm upgrade --install ${{ inputs.app }} ./charts/${{ inputs.app }} \
+              --namespace ${{ inputs.env }} \
+              --create-namespace \
+              -f apps/${{ inputs.app }}.yaml \
+              -f environments/${{ inputs.env }}/${{ inputs.app }}.yaml \
+              -f environments/${{ inputs.env }}/regions/${{ inputs.region }}/${{ inputs.app }}.yaml \
+              -f environments/${{ inputs.env }}/regions/${{ inputs.region }}/clusters/${{ inputs.app }}.yaml \
+              --atomic \
+              --wait
 
-          # Example real deployment command:
-          # helm upgrade --install ${{ inputs.app }} ./chart \
-          #   --namespace ${{ inputs.env }} \
-          #   --values values-${{ inputs.env }}.yaml \
-          #   --set image.tag=${{ inputs.latest-chart }}
+      # - name: Deploy Helm Chart
+        # run: |
+        #   echo "Deploying ${{ inputs.app }}"
+        #   echo "Environment: ${{ inputs.env }}"
+        #   echo "Region: ${{ inputs.region }}"
+        #   echo "Chart version: ${{ inputs.latest-chart }}"
+
+        #   # Example real deployment command:
+        #   # helm upgrade --install ${{ inputs.app }} ./chart \
+        #   #   --namespace ${{ inputs.env }} \
+        #   #   --values values-${{ inputs.env }}.yaml \
+        #   #   --set image.tag=${{ inputs.latest-chart }}
