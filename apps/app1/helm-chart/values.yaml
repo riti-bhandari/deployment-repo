@@ -10,8 +10,9 @@ serviceAccount:
   name: ""
 
 service:
-  type: ClusterIP
-  port: 80
+  type: NodePort
+  port: 8080
+  nodePort: 30080
 
 # service:
 #   type: NodePort
