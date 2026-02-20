@@ -1,4 +1,4 @@
-replicaCount: 2
-
-env:
-  REGION: eu
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"

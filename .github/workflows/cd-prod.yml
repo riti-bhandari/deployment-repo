@@ -1,0 +1,55 @@
+name: Helm Deployment
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: "Application name"
+        required: true
+        type: string
+      env:
+        description: "Environment (dev/stage/prod)"
+        required: true
+        type: string
+      region:
+        description: "AWS Region"
+        required: true
+        type: string
+      latest-chart:
+        description: "Chart version"
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-${{ inputs.env }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # 🔑 This is what enables manual approval for prod
+    environment: ${{ inputs.env }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy Helm Chart
+        run: |
+          echo "Deploying ${{ inputs.app }}"
+          echo "Environment: ${{ inputs.env }}"
+          echo "Region: ${{ inputs.region }}"
+          echo "Chart version: ${{ inputs.latest-chart }}"
+
+          # Example real deployment command:
+          # helm upgrade --install ${{ inputs.app }} ./chart \
+          #   --namespace ${{ inputs.env }} \
+          #   --values values-${{ inputs.env }}.yaml \
+          #   --set image.tag=${{ inputs.latest-chart }}
