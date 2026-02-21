@@ -1,5 +1,5 @@
 image:
-  tag: 0.10.9
+  tag: 0.10.10
 replicaCount: 2
 resources:
   requests:
