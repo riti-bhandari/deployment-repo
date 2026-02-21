@@ -20,14 +20,9 @@ on:
         required: true
         type: string
     secrets:
-      AZURE_VM_IP:
+      AZURE_CREDENTIALS:
         required: true
-      AZURE_VM_USER:
-        required: true
-      AZURE_VM_SSH_KEY:
-        required: true
-
-
+ 
 concurrency:
   group: deploy-${{ inputs.env }}
   cancel-in-progress: false
