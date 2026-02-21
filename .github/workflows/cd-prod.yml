@@ -92,4 +92,4 @@ jobs:
               # -f environments/${{ inputs.env }}/${{ inputs.app }}.yaml \
               # -f environments/${{ inputs.env }}/regions/${{ inputs.region }}/${{ inputs.app }}.yaml \
               # -f environments/${{ inputs.env }}/regions/${{ inputs.region }}/clusters/${{ inputs.app }}.yaml \
-              --wait
+              
