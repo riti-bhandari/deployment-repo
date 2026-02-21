@@ -68,6 +68,11 @@ jobs:
           echo "Region: ${{ inputs.region }}"
           echo "Chart version: ${{ inputs.latest-chart }}"
 
+      - name: Debug folders
+        run: |
+            pwd
+            ls -R
+
       - name: Deploy using Helm
         run: |        
             helm upgrade --install ${{ inputs.app }} ./apps/${{ inputs.app }}/helm-chart/ \
