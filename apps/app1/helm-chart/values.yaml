@@ -33,7 +33,7 @@ env:
   LOG_LEVEL: info
 
 ingress:
-  enabled: false
+  enabled: true
 hpa:
   enabled: false
 httpRoute:
