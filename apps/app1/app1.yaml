@@ -1,5 +1,5 @@
 image:
-  tag: 0.10.12
+  tag: pr-2e130f4
 replicaCount: 2
 resources:
   requests:
