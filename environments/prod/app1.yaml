@@ -4,5 +4,5 @@ env:
   LOG_LEVEL: debug
   ENVIRONMENT: prod
 
-ingress:
-  path: /prod
+# ingress:
+#   path: /prod

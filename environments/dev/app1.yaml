@@ -4,8 +4,8 @@ env:
   LOG_LEVEL: debug
   ENVIRONMENT: dev
 
-ingress:
-  path: /dev
+# ingress:
+#   path: /dev
 
 # ingress:
 #   enabled: true
