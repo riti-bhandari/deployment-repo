@@ -1,5 +1,5 @@
 image:
-  tag: 0.11.0
+  tag: pr-a250d64
 replicaCount: 2
 resources:
   requests:
