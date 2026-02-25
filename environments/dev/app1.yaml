@@ -4,7 +4,11 @@ env:
   LOG_LEVEL: debug
   ENVIRONMENT: dev
 
+ingress:
+  path: /dev
 
+# ingress:
+#   enabled: true
 
 # image:
 #   tag: "0.9.5"
