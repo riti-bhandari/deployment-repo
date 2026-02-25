@@ -1,5 +1,5 @@
 image:
-  tag: pr-61876fd
+  tag: pr-c99571b
 replicaCount: 2
 resources:
   requests:
