@@ -89,7 +89,7 @@ jobs:
               --namespace ${{ inputs.env }} \
               --create-namespace \
               -f ./apps/${{ inputs.app }}/${{ inputs.app }}.yaml \
-              -f ./apps/environments/${{ inputs.env }}/${{ inputs.app }}.yaml \
+              -f ./environments/${{ inputs.env }}/${{ inputs.app }}.yaml \
               # -f environments/${{ inputs.env }}/regions/${{ inputs.region }}/${{ inputs.app }}.yaml \
               # -f environments/${{ inputs.env }}/regions/${{ inputs.region }}/clusters/${{ inputs.app }}.yaml \
               
