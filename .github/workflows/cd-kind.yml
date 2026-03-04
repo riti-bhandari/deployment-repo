@@ -1,0 +1,95 @@
+name: Helm Deployment
+
+on:
+  workflow_call:
+    inputs:
+      deployment-repo:
+       required: true
+       type: string
+      app:
+        description: "Application name"
+        required: true
+        type: string
+      env:
+        description: "Environment (dev/stage/prod)"
+        required: true
+        type: string
+      region:
+        description: "AWS Region"
+        required: true
+        type: string
+      latest-chart:
+        description: "Chart version"
+        required: true
+        type: string
+      resource-group:
+        required: true
+        type: string
+      cluster-name:
+        required: true
+        type: string     
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+      GH_PAT:
+         required: true
+ 
+concurrency:
+  group: deploy-${{ inputs.env }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # 🔑 This is what enables manual approval for prod
+    environment: ${{ inputs.env }}
+
+    steps:
+      - name: Checkout deployment repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{inputs.deployment-repo}}
+          token: ${{ secrets.GH_PAT }}
+          path: deployment-repo
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ inputs.resource-group }}
+          cluster-name: ${{ inputs.cluster-name }}
+
+      - name: Deploy Helm Chart
+        run: |
+          echo "Deploying ${{ inputs.app }}"
+          echo "Environment: ${{ inputs.env }}"
+          echo "Region: ${{ inputs.region }}"
+          echo "Chart version: ${{ inputs.latest-chart }}"
+
+      - name: Debug folders
+        run: |
+            pwd
+            ls -R
+
+      - name: Deploy using Helm
+        run: |        
+            cd deployment-repo
+            helm upgrade --install ${{ inputs.app }} ./apps/${{ inputs.app }}/helm-chart/ \
+              --namespace ${{ inputs.env }} \
+              --create-namespace \
+              -f ./apps/${{ inputs.app }}/${{ inputs.app }}.yaml \
+              -f ./environments/${{ inputs.env }}/${{ inputs.app }}.yaml \
+              # -f environments/${{ inputs.env }}/regions/${{ inputs.region }}/${{ inputs.app }}.yaml \
+              # -f environments/${{ inputs.env }}/regions/${{ inputs.region }}/clusters/${{ inputs.app }}.yaml \
+              
