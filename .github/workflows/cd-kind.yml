@@ -1,4 +1,4 @@
-name: Helm Deployment (KIND)
+name: Helm Deployment (Local KIND)
 
 on:
   workflow_call:
@@ -21,13 +21,14 @@ on:
     secrets:
       GH_PAT:
         required: true
+      KUBECONFIG_DATA:
+        required: true
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted   # 👈 IMPORTANT (local runner)
 
     steps:
-      # Checkout deployment repo
       - name: Checkout deployment repo
         uses: actions/checkout@v4
         with:
@@ -35,29 +36,30 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: deployment-repo
 
-      # Install Docker (already available in runner)
-
-      # Install kind
-      - name: Install kind
-        run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
-          chmod +x ./kind
-          sudo mv ./kind /usr/local/bin/kind
-
-      # Create kind cluster
-      - name: Create KIND cluster
-        run: |
-          kind create cluster --name cicd-cluster
-
-      # Install Helm
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      # Verify cluster
-      - name: Verify Cluster
-        run: kubectl get nodes
+      # 🔥 Setup kubeconfig for kind
+      - name: Set kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_DATA }}" > $HOME/.kube/config
 
-      # Deploy using Helm
+      - name: Verify kind cluster
+        run: |
+          kubectl config use-context kind-kind
+          kubectl get nodes
+
+      # 🔥 Pull latest image locally
+      - name: Pull Docker image
+        run: |
+          docker pull yourdockerhubusername/my-app:${{ inputs.latest-chart }}
+
+      # 🔥 Load image into kind
+      - name: Load image into kind
+        run: |
+          kind load docker-image yourdockerhubusername/my-app:${{ inputs.latest-chart }}
+
       - name: Deploy using Helm
         run: |
           cd deployment-repo
