@@ -32,7 +32,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [Ritika, self-hosted, Linux, X64]
 
     # 🔑 This is what enables manual approval for prod
     environment: ${{ inputs.env }}
