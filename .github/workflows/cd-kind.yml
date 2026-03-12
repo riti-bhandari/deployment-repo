@@ -1,0 +1,85 @@
+name: Deploy to KIND
+
+on:
+  workflow_call: 
+     inputs:
+        deployment-repo:
+          required: true
+          type: string
+        app:
+          description: "Application name"
+          required: true
+          type: string
+        env:
+          description: "Environment (dev/stage/prod)"
+          required: true
+          type: string
+        latest-chart:
+          description: "Chart version"
+          required: true
+          type: string   
+     secrets:
+        GH_PAT:
+          required: true
+        # DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        #   required: true
+        # DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        #   required: true
+
+concurrency:
+  group: deploy-${{ inputs.env }}     #ensures: Only one deployment per environment runs at a time.
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Linux, X64]
+
+    # 🔑 This is what enables manual approval for prod
+    environment: ${{ inputs.env }}
+
+    steps:
+      - name: Checkout deployment repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{inputs.deployment-repo}}
+          token: ${{ secrets.GH_PAT }}
+          path: deployment-repo
+          
+      # - name: Install Helm
+      #   uses: azure/setup-helm@v4
+
+      - name: Deploy Helm Chart
+        run: |
+          echo "Deploying ${{ inputs.app }}"
+          echo "Environment: ${{ inputs.env }}"
+          echo "Chart version: ${{ inputs.latest-chart }}"
+          
+      - name: Debug folders
+        run: |
+            pwd
+            ls -R
+            
+      - name: Verify kind cluster
+        run: |
+          kubectl config use-context kind-kind
+          kubectl config get-contexts
+          kubectl get nodes
+
+      # - name: Pull latest image
+      #   run: |
+      #     docker pull yourdockerhub/my-app:latest
+
+      # - name: Load image into kind
+      #   run: |
+      #     kind load docker-image yourdockerhub/my-app:latest
+
+      - name: Deploy using Helm
+        run: |
+          cd deployment-repo
+          helm upgrade --install ${{ inputs.app }} ./apps/${{ inputs.app }}/helm-chart/ \
+            --namespace ${{ inputs.env }} --create-namespace \
+            -f ./apps/${{ inputs.app }}/${{ inputs.app }}.yaml \
+            -f ./environments/${{ inputs.env }}/${{ inputs.app }}.yaml 
+
+
+
