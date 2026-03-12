@@ -1,7 +1,7 @@
 image:
   tag: 0.13.1
 replicaCount: 2
-resources:
-  requests:
-    cpu: "200m"
-    memory: "256Mi"
+# resources:
+#   requests:
+#     cpu: "200m"
+#     memory: "256Mi"

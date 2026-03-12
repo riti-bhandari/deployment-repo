@@ -22,12 +22,20 @@ service:
 #   nodePort: 30007
 
 resources:
-  limits:
-    cpu: "250m"
-    memory: "256Mi"
   requests:
-    cpu: "100m"
-    memory: "128Mi"
+    cpu: "50m"
+    memory: "100Gi"
+  limits:
+    cpu: "50m"
+    memory: "100Gi"
+
+# resources:
+#   requests:
+#     cpu: "100m"
+#     memory: "128Mi"
+#   limits:
+#     cpu: "250m"
+#     memory: "256Mi"
 
 env:
   LOG_LEVEL: info
